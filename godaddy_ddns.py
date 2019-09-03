@@ -48,6 +48,8 @@ else:
   from urllib2 import urlopen, Request
   from urllib2 import URLError, HTTPError
 
+from datetime import datetime
+
 parser = argparse.ArgumentParser(description='Update GoDaddy DNS "A" Record.', fromfile_prefix_chars='%', epilog= \
 '''GoDaddy customers can obtain values for the KEY and SECRET arguments by creating a production key at
 https://developer.godaddy.com/keys/.
@@ -78,6 +80,9 @@ parser.add_argument('--force', type=bool, default=False,
   help='force update of GoDaddy DNS record even if DNS query indicates that record is already correct.')
 
 args = parser.parse_args()
+
+def getDateTime():
+  return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
 def main():
   hostnames = args.hostname.split('.')
@@ -155,9 +160,9 @@ def main():
         msg = 'Unable to set IP address: GoDaddy API failure because "{}".'.format(e.reason)
         raise Exception(msg)
       
-      print('IP address for {} set to {}.'.format(args.hostname,args.ip))
+      print('{} - IP address for {} set to {}.'.format(getDateTime(),args.hostname,args.ip))
     else:
-      print('{} already has IP address {}.'.format(args.hostname, dnsaddr))
+      print('{} - {} already has IP address {}.'.format(getDateTime(), args.hostname, dnsaddr))
 
 if __name__ == '__main__':
   main()
