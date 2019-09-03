@@ -108,55 +108,56 @@ def main():
   if not args.force and len(ipslist)==1:
     try:
       dnsaddr = socket.gethostbyname(args.hostname)
-      if ipslist[0] == dnsaddr:
-        msg = '{} already has IP address {}.'.format(args.hostname, dnsaddr)
-        raise Exception(msg)
     except:
-      pass
-             
-  url = 'https://api.godaddy.com/v1/domains/{}/records/A/{}'.format('.'.join(hostnames[1:]),hostnames[0])
-  data = json.dumps([ { "data": ip, "ttl": args.ttl, "name": hostnames[0], "type": "A" } for ip in  ipslist])
-  if sys.version_info > (3,):  data = data.encode('utf-8')
-  req = Request(url, method='PUT', data=data)
+      msg = 'Failed to resolve hostname "{}"'.format(args.hostname)
+      raise Exception(msg)
 
-  req.add_header("Content-Type","application/json")
-  req.add_header("Accept","application/json")
-  if args.key and args.secret:
-    req.add_header("Authorization", "sso-key {}:{}".format(args.key,args.secret))
+    if ipslist[0] != dnsaddr:
+      url = 'https://api.godaddy.com/v1/domains/{}/records/A/{}'.format('.'.join(hostnames[1:]),hostnames[0])
+      data = json.dumps([ { "data": ip, "ttl": args.ttl, "name": hostnames[0], "type": "A" } for ip in  ipslist])
+      if sys.version_info > (3,):  data = data.encode('utf-8')
+      req = Request(url, method='PUT', data=data)
 
-  try:
-    with urlopen(req) as f: resp = f.read()
-    if sys.version_info > (3,):  resp = resp.decode('utf-8')
-    # resp = json.loads(resp)
-  except HTTPError as e:
-    if e.code==400:
-      msg = 'Unable to set IP address: GoDaddy API URL ({}) was malformed.'.format(req.full_url)
-    elif e.code==401:
+      req.add_header("Content-Type","application/json")
+      req.add_header("Accept","application/json")
       if args.key and args.secret:
-        msg = '''Unable to set IP address: --key or --secret option incorrect.
-Correct values can be obtained from from https://developer.godaddy.com/keys/ and are ideally placed in a % file.'''
-      else:
-        msg = '''Unable to set IP address: --key or --secret option missing.
-Correct values can be obtained from from https://developer.godaddy.com/keys/ and are ideally placed in a % file.'''
-    elif e.code==403:
-        msg = '''Unable to set IP address: customer identified by --key and --secret options denied permission.
-Correct values can be obtained from from https://developer.godaddy.com/keys/ and are ideally placed in a % file.'''
-    elif e.code==404:
-        msg = 'Unable to set IP address: {} not found at GoDaddy.'.format(args.hostname)
-    elif e.code==422:
-        msg = 'Unable to set IP address: "{}" has invalid domain or lacks A record.'.format(args.hostname)
-    elif e.code==429:
-        msg = 'Unable to set IP address: too many requests to GoDaddy within brief period.'
-    elif e.code==503:
-        msg = 'Unable to set IP address: "{}" is unavailable.'.format(args.hostname)
-    else:
-      msg = 'Unable to set IP address: GoDaddy API failure because "{}".'.format(e.reason)
-    raise Exception(msg)
-  except URLError as e:
-    msg = 'Unable to set IP address: GoDaddy API failure because "{}".'.format(e.reason)
-    raise Exception(msg)
+        req.add_header("Authorization", "sso-key {}:{}".format(args.key,args.secret))
 
-  print('IP address for {} set to {}.'.format(args.hostname,args.ip))
+      try:
+        with urlopen(req) as f: resp = f.read()
+        if sys.version_info > (3,):  resp = resp.decode('utf-8')
+        # resp = json.loads(resp)
+      except HTTPError as e:
+        if e.code==400:
+          msg = 'Unable to set IP address: GoDaddy API URL ({}) was malformed.'.format(req.full_url)
+        elif e.code==401:
+          if args.key and args.secret:
+            msg = '''Unable to set IP address: --key or --secret option incorrect.
+    Correct values can be obtained from from https://developer.godaddy.com/keys/ and are ideally placed in a % file.'''
+          else:
+            msg = '''Unable to set IP address: --key or --secret option missing.
+    Correct values can be obtained from from https://developer.godaddy.com/keys/ and are ideally placed in a % file.'''
+        elif e.code==403:
+            msg = '''Unable to set IP address: customer identified by --key and --secret options denied permission.
+    Correct values can be obtained from from https://developer.godaddy.com/keys/ and are ideally placed in a % file.'''
+        elif e.code==404:
+            msg = 'Unable to set IP address: {} not found at GoDaddy.'.format(args.hostname)
+        elif e.code==422:
+            msg = 'Unable to set IP address: "{}" has invalid domain or lacks A record.'.format(args.hostname)
+        elif e.code==429:
+            msg = 'Unable to set IP address: too many requests to GoDaddy within brief period.'
+        elif e.code==503:
+            msg = 'Unable to set IP address: "{}" is unavailable.'.format(args.hostname)
+        else:
+          msg = 'Unable to set IP address: GoDaddy API failure because "{}".'.format(e.reason)
+        raise Exception(msg)
+      except URLError as e:
+        msg = 'Unable to set IP address: GoDaddy API failure because "{}".'.format(e.reason)
+        raise Exception(msg)
+      
+      print('IP address for {} set to {}.'.format(args.hostname,args.ip))
+    else:
+      print('{} already has IP address {}.'.format(args.hostname, dnsaddr))
 
 if __name__ == '__main__':
   main()
