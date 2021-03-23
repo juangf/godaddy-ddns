@@ -94,7 +94,9 @@ def main():
 
   if not args.ip:
     try:
-      with urlopen("https://ipv4.icanhazip.com/") as f: resp=f.read()
+      headers = {'User-Agent':'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:23.0) Gecko/20100101 Firefox/23.0'}
+      req = Request(url="https://ipv4.icanhazip.com/", headers=headers)
+      with urlopen(req) as f: resp=f.read()
       if sys.version_info > (3,): resp = resp.decode('utf-8')
       args.ip = resp.strip()
     except URLError:
